@@ -2,14 +2,17 @@ package sentence_score
 
 import (
 	variable_parameter "github.com/golang-infrastructure/go-variable-parameter"
+	"sort"
 	"strings"
 )
 
 // BuiltinDictionary 内建的词典
 var BuiltinDictionary = LoadBuiltinDictionary()
 
+// ------------------------------------------------ ---------------------------------------------------------------------
+
 // CalculateScore 为字符串计算得分
-func CalculateScore(sentence string, dictionary ...*Dictionary) float64 {
+func CalculateScore(sentence string, dictionary ...*Dictionary) ([]string, float64) {
 
 	// 如果没有传递字典的话，则使用默认的字典
 	dictionary = variable_parameter.SetDefaultParam(dictionary, BuiltinDictionary)
@@ -62,5 +65,48 @@ func CalculateScore(sentence string, dictionary ...*Dictionary) float64 {
 	}
 
 	// 读取单词，采取最长匹配原则
-	return float64(len(words))
+	return words, float64(len(words))
 }
+
+// ------------------------------------------------ ---------------------------------------------------------------------
+
+// CalculateScoreAndDescSort 对一组字符串计算得分并倒序排序
+func CalculateScoreAndDescSort(sentenceSlice []string, dictionary ...*Dictionary) []*CalculateScoreAndSortResultItem {
+
+	// 计算得分
+	result := make([]*CalculateScoreAndSortResultItem, len(sentenceSlice))
+	for index, sentence := range sentenceSlice {
+		words, score := CalculateScore(sentence)
+		result[index] = NewCalculateScoreAndSortResultItem(sentence, words, score)
+	}
+
+	// 排序
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Score > result[j].Score
+	})
+
+	return result
+}
+
+// CalculateScoreAndSortResultItem 对上一项的每条计算结果
+type CalculateScoreAndSortResultItem struct {
+
+	// 是哪个句子
+	Sentence string
+
+	// 从Sentence中解析到的单词
+	Words []string
+
+	// 得分是多少
+	Score float64
+}
+
+func NewCalculateScoreAndSortResultItem(sentence string, words []string, score float64) *CalculateScoreAndSortResultItem {
+	return &CalculateScoreAndSortResultItem{
+		Sentence: sentence,
+		Words:    words,
+		Score:    score,
+	}
+}
+
+// ------------------------------------------------ ---------------------------------------------------------------------
